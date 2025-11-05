@@ -1,0 +1,75 @@
+version: 0.2
+
+phases:
+  install:
+    # Specify runtime version if needed by your build tools or application
+    runtime-versions:
+       nodejs: 18 # Or your required Node.js version
+    commands:
+      # Install dependencies for your application
+      - echo "Installing application dependencies..."
+      - npm install
+
+      # --- Install Security Scan Tools Here ---
+      # Example: Install Snyk CLI (replace with your chosen tools)
+      # - npm install -g snyk
+      # Example: Install TruffleHog (requires Python/pip)
+      # - pip install trufflehog
+      # Example: Download SonarScanner (if using SonarQube/SonarCloud)
+      # - curl --create-dirs -sSLo sonar.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-latest-linux.zip
+      # - unzip sonar.zip
+      # - export PATH=$PATH:./sonar-scanner-*/bin
+
+  pre_build:
+     commands:
+       # --- Run Security Scans Here ---
+       - echo "Running security scans..."
+
+       # Example: Run Snyk SCA scan (requires SNYK_TOKEN env var)
+       # - snyk test --fail-on=high --all-projects || true # Use '|| true' if you want pipeline to continue on failure for now
+
+       # Example: Run Snyk Code SAST scan (requires SNYK_TOKEN env var)
+       # - snyk code test --fail-on=high --all-projects || true
+
+       # Example: Run TruffleHog secrets scan
+       # - trufflehog git file://. --fail # Fails build if secrets found
+
+       # Example: Run SonarScanner (requires SONAR_* env vars)
+       # - sonar-scanner
+
+  build:
+    commands:
+      - echo "Build started on `date`"
+      - echo "Running build commands (e.g., compilation, tests)..."
+      # Add your application build commands here (if any)
+      # Example: Run unit tests
+      # - npm test
+      # Example: Create a production build (for frameworks like React, Angular, etc.)
+      # - npm run build
+
+  post_build:
+     commands:
+        - echo "Build completed on `date`"
+        # Commands to prepare artifacts for deployment
+        # If deploying directly to Elastic Beanstalk (non-Docker), you might not need extra steps
+        # If creating a specific artifact bundle (e.g., for CodeDeploy or specific EB structure):
+        # Example: Create a zip for Elastic Beanstalk deployment
+        # - echo "Creating deployment artifact..."
+        # - zip -r ../deployment_package.zip . -x ".git/*" "node_modules/*" "sonar.zip" "sonar-scanner-*" # Exclude unnecessary files
+        # Or if deploying a Docker image (build/push would happen in 'build' or 'post_build')
+
+artifacts:
+  # Define the files to be included in the CodeBuild output artifact
+  # This artifact is passed to the next stage (Deploy) in CodePipeline
+  files:
+    # Include all files needed for deployment
+    - '**/*'
+  # If you created a specific zip in post_build for EB/CodeDeploy, use that instead:
+  # files:
+  #  - deployment_package.zip
+  # If deploying Docker, CodeBuild often pushes image directly, artifacts might be empty or contain config files
+  base-directory: '.' # Specify the root directory (where buildspec is)
+
+# cache: # Optional: Define paths to cache for faster builds
+#   paths:
+#     - 'node_modules/**/*'
